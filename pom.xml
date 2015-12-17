@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>io.spring.platform</groupId>
+        <artifactId>platform-bom</artifactId>
+        <version>2.0.0.RELEASE</version>
+    </parent>
+
+    <groupId>com.github.zhanhb</groupId>
+    <artifactId>native-runner</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+
+    <properties>
+        <java.version>1.7</java.version>
+        <jna.version>4.2.1</jna.version>
+        <start-class>com.github.zhanhb.judge.jna.Main</start-class>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>${jna.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna-platform</artifactId>
+            <version>${jna.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>2.4.2</version>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <arguments>
+                        <argument>-input</argument>
+                        <argument>pom.xml</argument>
+                        <argument>-output</argument>
+                        <argument>target/b.txt</argument>
+                        <argument>-error</argument>
+                        <argument>target/c.txt</argument>
+                        <argument>-time</argument>
+                        <argument>3000</argument>
+                        <!--<argument>notepad</argument>-->
+                        <argument>cmd</argument>
+                        <argument>/c</argument>
+                        <argument>shutdown</argument>
+                        <argument>/r</argument>
+                        <argument>/t</argument>
+                        <argument>120</argument>
+                        <argument>/f</argument>
+<!--                        <argument>echo</argument>
+                        <argument>zzzzzzzzzzz</argument>-->
+                    </arguments>
+                    <fork>true</fork>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
