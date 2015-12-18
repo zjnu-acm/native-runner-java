@@ -10,10 +10,15 @@
     <groupId>com.github.zhanhb</groupId>
     <artifactId>native-runner</artifactId>
     <version>0.0.1-SNAPSHOT</version>
+    <name>Online Judge Native Runner</name>
+    <description>Online Judge System Native Runner.</description>
+    <url>https://github.com/zhanhb/native-runner-java/</url>
+    <inceptionYear>2015</inceptionYear>
 
     <properties>
         <java.version>1.7</java.version>
         <jna.version>4.2.1</jna.version>
+        <lombok.version>1.16.6</lombok.version>
         <start-class>com.github.zhanhb.judge.jna.Main</start-class>
     </properties>
 
@@ -34,9 +39,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest-core</artifactId>
-            <scope>test</scope>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 
@@ -46,10 +51,40 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>2.4.2</version>
+                <configuration>
+                    <filters>
+                        <filter>
+                            <artifact>net.java.dev.jna:jna</artifact>
+                            <includes>
+                                <include>com/sun/jna/*</include>
+                                <include>com/sun/jna/win32*/**</include>
+                                <include>com/sun/jna/ptr/**</include>
+                            </includes>
+                        </filter>
+                        <filter>
+                            <artifact>net.java.dev.jna:jna-platform</artifact>
+                            <includes>
+                                <include>com/sun/jna/platform/*</include>
+                                <include>com/sun/jna/platform/win32/*</include>
+                            </includes>
+                        </filter>
+                        <filter>
+                            <artifact>org.projectlombok:lombok</artifact>
+                            <excludes>
+                                <exclude>**</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
                 <configuration>
                     <arguments>
                         <argument>-input</argument>
@@ -68,16 +103,12 @@
                         <argument>/t</argument>
                         <argument>120</argument>
                         <argument>/f</argument>
-<!--                        <argument>echo</argument>
+                        <!--                        <argument>echo</argument>
                         <argument>zzzzzzzzzzz</argument>-->
                     </arguments>
+                    <classifier>spring</classifier>
                     <fork>true</fork>
                 </configuration>
-                <executions>
-                    <execution>
-                        <phase>none</phase>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>

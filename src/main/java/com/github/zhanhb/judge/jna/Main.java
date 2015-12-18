@@ -68,6 +68,10 @@ public class Main {
     public static final int O_SYNC = 0x0800;
     public static final int O_DSYNC = 0x2000;
     private static final Sandbox sandbox = new Sandbox();
+
+    /**
+     * Force a dispose when the Native class is GC'd.
+     */
     private static final Object finalizer = new Object() {
 
         @Override
@@ -121,7 +125,7 @@ public class Main {
     @SuppressWarnings("UseOfSystemOutOrSystemErr")
     public static void main(String[] args) {
         Kernel32 kernel32 = Kernel32.INSTANCE;
-        ArgumentsParser parser = new ArgumentsParser(args);
+        Options parser = new ArgumentsParser().parse(args);
 
         String prog = parser.getProg();
         String inputFileName = parser.getInputFileName();

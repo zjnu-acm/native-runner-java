@@ -8,10 +8,11 @@ import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinBase.SECURITY_ATTRIBUTES;
 import com.sun.jna.platform.win32.WinDef;
 import com.sun.jna.platform.win32.WinNT.HANDLE;
-import com.sun.jna.platform.win32.WinNT.LARGE_INTEGER;
+import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.win32.StdCallLibrary;
 import com.sun.jna.win32.W32APIOptions;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public interface Kernel32Ex extends StdCallLibrary {
@@ -69,17 +70,52 @@ public interface Kernel32Ex extends StdCallLibrary {
      */
     int ResumeThread(HANDLE hThread);
 
+    /**
+     *
+     * @param hProcess A handle to the process whose timing information is
+     * sought.
+     * @param lpCreationTime A pointer to a FILETIME structure that receives the
+     * creation time of the process.
+     * @param lpExitTime A pointer to a FILETIME structure that receives the
+     * exit time of the process. If the process has not exited, the content of
+     * this structure is undefined.
+     * @param lpKernelTime A pointer to a FILETIME structure that receives the
+     * amount of time that the process has executed in kernel mode. The time
+     * that each of the threads of the process has executed in kernel mode is
+     * determined, and then all of those times are summed together to obtain
+     * this value.
+     * @param lpUserTime A pointer to a FILETIME structure that receives the
+     * amount of time that the process has executed in user mode. The time that
+     * each of the threads of the process has executed in user mode is
+     * determined, and then all of those times are summed together to obtain
+     * this value. Note that this value can exceed the amount of real time
+     * elapsed (between lpCreationTime and lpExitTime) if the process executes
+     * across multiple CPU cores.
+     * @return If the function succeeds, the return value is nonzero. If the
+     * function fails, the return value is zero. To get extended error
+     * information, call GetLastError.
+     * @see
+     * https://msdn.microsoft.com/en-us/library/windows/desktop/ms683223(v=vs.85).aspx
+     */
     boolean GetProcessTimes(HANDLE hProcess, WinBase.FILETIME lpCreationTime, WinBase.FILETIME lpExitTime, WinBase.FILETIME lpKernelTime, WinBase.FILETIME lpUserTime);
 
     boolean GetHandleInformation(HANDLE hObject, WinDef.DWORDByReference dwFlags);
 
     HANDLE CreateJobObject(SECURITY_ATTRIBUTES object, String object0);
 
-    @SuppressWarnings({"PublicInnerClass", "PublicField"})
-    class JOBOBJECT_BASIC_LIMIT_INFORMATION extends Structure {
+    @SuppressWarnings("PublicInnerClass")
+    abstract class JOBOBJECT_INFORMATION extends Structure {
+    }
 
-        public LARGE_INTEGER PerProcessUserTimeLimit;
-        public LARGE_INTEGER PerJobUserTimeLimit;
+    /**
+     * @see
+     * https://msdn.microsoft.com/en-us/library/windows/desktop/ms684147(v=vs.85).aspx
+     */
+    @SuppressWarnings({"PublicInnerClass", "PublicField"})
+    class JOBOBJECT_BASIC_LIMIT_INFORMATION extends JOBOBJECT_INFORMATION {
+
+        public long PerProcessUserTimeLimit;
+        public long PerJobUserTimeLimit;
         public int LimitFlags;
         public SIZE_T MinimumWorkingSetSize;
         public SIZE_T MaximumWorkingSetSize;
@@ -90,17 +126,17 @@ public interface Kernel32Ex extends StdCallLibrary {
 
         @Override
         protected List<String> getFieldOrder() {
-            return Arrays.asList(new String[]{
-                "PerProcessUserTimeLimit",
-                "PerJobUserTimeLimit",
-                "LimitFlags",
-                "MinimumWorkingSetSize",
-                "MaximumWorkingSetSize",
-                "ActiveProcessLimit",
-                "Affinity",
-                "PriorityClass",
-                "SchedulingClass"
-            });
+            return Arrays.asList(
+                    "PerProcessUserTimeLimit",
+                    "PerJobUserTimeLimit",
+                    "LimitFlags",
+                    "MinimumWorkingSetSize",
+                    "MaximumWorkingSetSize",
+                    "ActiveProcessLimit",
+                    "Affinity",
+                    "PriorityClass",
+                    "SchedulingClass"
+            );
         }
 
     }
@@ -166,18 +202,22 @@ public interface Kernel32Ex extends StdCallLibrary {
     int JobObjectJobSetInformation = 10;
     int MaxJobObjectInfoClass = 11;
 
-    boolean SetInformationJobObject(HANDLE hJob, int JobObjectInfoClass, Structure lpJobObjectInfo, int cbJobObjectInfoLength);
+    boolean SetInformationJobObject(HANDLE hJob, int JobObjectInfoClass, JOBOBJECT_INFORMATION lpJobObjectInfo, int cbJobObjectInfoLength);
 
     @SuppressWarnings({"PublicInnerClass", "PublicField"})
-    class JOBOBJECT_BASIC_UI_RESTRICTIONS extends Structure {
+    class JOBOBJECT_BASIC_UI_RESTRICTIONS extends JOBOBJECT_INFORMATION {
 
         public int UIRestrictionsClass;
 
         @Override
         protected List<String> getFieldOrder() {
-            return Arrays.asList(new String[]{"UIRestrictionsClass"});
+            return Collections.singletonList("UIRestrictionsClass");
         }
 
     };
+
+    int GetThreadErrorMode();
+
+    boolean SetThreadErrorMode(int dwNewMode, IntByReference lpOldMode);
 
 }

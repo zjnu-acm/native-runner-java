@@ -1,12 +1,9 @@
 package com.github.zhanhb.judge.jna;
 
 import com.sun.jna.Native;
-import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 import com.sun.jna.platform.win32.BaseTSD;
-import com.sun.jna.platform.win32.WinDef;
-import com.sun.jna.platform.win32.WinNT;
-import com.sun.jna.ptr.IntByReference;
+import com.sun.jna.platform.win32.WinNT.HANDLE;
 import com.sun.jna.win32.StdCallLibrary;
 import com.sun.jna.win32.W32APIOptions;
 import java.util.Arrays;
@@ -15,47 +12,6 @@ import java.util.List;
 public interface PsapiEx extends StdCallLibrary {
 
     PsapiEx INSTANCE = (PsapiEx) Native.loadLibrary("psapi", PsapiEx.class, W32APIOptions.DEFAULT_OPTIONS);
-
-    /*
-	 * http://msdn.microsoft.com/en-us/library/ms682629(VS.85).aspx
-     */
-    boolean EnumProcesses(int[] pProcessIds, WinDef.DWORD cb, IntByReference pBytesReturned);
-
-    /*
-	 * http://msdn.microsoft.com/en-us/library/ms682631(VS.85).aspx
-     */
-    boolean EnumProcessModules(Pointer hProcess, Pointer[] lphModule, WinDef.DWORD cb, IntByReference lpcbNeededs);
-
-    /*
-	 * http://msdn.microsoft.com/en-us/library/ms683198(VS.85).aspx
-     */
-    int GetModuleFileNameExA(Pointer hProcess, Pointer hModule, byte[] lpImageFileName, WinDef.DWORD nSize);
-
-    /*
-	 * http://msdn.microsoft.com/en-us/library/ms684229(VS.85).aspx
-     */
-    @SuppressWarnings({"PublicField", "PublicInnerClass"})
-    public static class LPMODULEINFO extends Structure {
-
-        public Pointer lpBaseOfDll;	//FIXME Pointer
-        public WinDef.DWORD SizeOfImage;
-        public Pointer EntryPoint;
-
-        @Override
-        protected List<String> getFieldOrder() {
-            return Arrays.asList(new String[]{"lpBaseOfDll", "SizeOfImage", "EntryPoint"});
-        }
-    }
-
-    /*
-	 * http://msdn.microsoft.com/en-us/library/ms683201(VS.85).aspx
-     */
-    boolean GetModuleInformation(WinNT.HANDLE hProcess, Pointer hModule, LPMODULEINFO lpmodinfo, WinDef.DWORD cb);
-
-    /*
-     * http://msdn.microsoft.com/en-us/library/ms683217(VS.85).aspx
-     */
-    int GetProcessImageFileNameA(WinNT.HANDLE hProcess, byte[] lpImageFileName, WinDef.DWORD nSize);
 
     /**
      * Memory statistics for a process.
@@ -111,18 +67,18 @@ public interface PsapiEx extends StdCallLibrary {
 
         @Override
         protected List<String> getFieldOrder() {
-            return Arrays.asList(new String[]{
-                "cb",
-                "PageFaultCount",
-                "PeakWorkingSetSize",
-                "WorkingSetSize",
-                "QuotaPeakPagedPoolUsage",
-                "QuotaPagedPoolUsage",
-                "QuotaPeakNonPagedPoolUsage",
-                "QuotaNonPagedPoolUsage",
-                "PagefileUsage",
-                "PeakPagefileUsage"
-            });
+            return Arrays.asList(
+                    "cb",
+                    "PageFaultCount",
+                    "PeakWorkingSetSize",
+                    "WorkingSetSize",
+                    "QuotaPeakPagedPoolUsage",
+                    "QuotaPagedPoolUsage",
+                    "QuotaPeakNonPagedPoolUsage",
+                    "QuotaNonPagedPoolUsage",
+                    "PagefileUsage",
+                    "PeakPagefileUsage"
+            );
         }
     }
 
@@ -144,6 +100,6 @@ public interface PsapiEx extends StdCallLibrary {
      * information, call GetLastError.
      * @see http://msdn.microsoft.com/en-us/library/ms683219(VS.85).aspx
      */
-    boolean GetProcessMemoryInfo(WinNT.HANDLE hProcess, PROCESS_MEMORY_COUNTERS ppsmemCounters, int cb);
+    boolean GetProcessMemoryInfo(HANDLE hProcess, PROCESS_MEMORY_COUNTERS ppsmemCounters, int cb);
 
 }
