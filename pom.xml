@@ -24,6 +24,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>com.google.code.findbugs</groupId>
+            <artifactId>jsr305</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
             <version>${jna.version}</version>
@@ -53,6 +58,12 @@
                 <version>2.4.2</version>
                 <configuration>
                     <filters>
+                        <filter>
+                            <artifact>com.google.code.findbugs:jsr305</artifact>
+                            <excludes>
+                                <exclude>**</exclude>
+                            </excludes>
+                        </filter>
                         <filter>
                             <artifact>net.java.dev.jna:jna</artifact>
                             <includes>
@@ -95,19 +106,15 @@
                         <argument>target/c.txt</argument>
                         <argument>-time</argument>
                         <argument>3000</argument>
-                        <!--<argument>notepad</argument>-->
-                        <argument>cmd</argument>
-                        <argument>/c</argument>
+                        <!--<argument>cmd</argument>-->
+                        <!--<argument>/c</argument>-->
                         <argument>shutdown</argument>
                         <argument>/r</argument>
                         <argument>/t</argument>
                         <argument>120</argument>
                         <argument>/f</argument>
-                        <!--                        <argument>echo</argument>
-                        <argument>zzzzzzzzzzz</argument>-->
                     </arguments>
                     <classifier>spring</classifier>
-                    <fork>true</fork>
                 </configuration>
             </plugin>
         </plugins>

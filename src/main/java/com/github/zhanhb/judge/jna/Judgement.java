@@ -1,6 +1,5 @@
 package com.github.zhanhb.judge.jna;
 
-import com.sun.jna.platform.win32.Kernel32;
 import com.sun.jna.platform.win32.Win32Exception;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinNT;
@@ -41,7 +40,7 @@ public class Judgement {
     public long getStartTime() {
         WinBase.FILETIME ftCreateTime = new WinBase.FILETIME();
         WinBase.FILETIME temp = new WinBase.FILETIME();
-        if (!Kernel32Ex.INSTANCE.GetProcessTimes(hProcess, ftCreateTime, temp, temp, temp)) {
+        if (!Kernel32.INSTANCE.GetProcessTimes(hProcess, ftCreateTime, temp, temp, temp)) {
             throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
         }
         return ftCreateTime.toLong();
@@ -51,7 +50,7 @@ public class Judgement {
         WinBase.FILETIME ftCreateTime = new WinBase.FILETIME();
         WinBase.FILETIME ftExitTime = new WinBase.FILETIME();
         WinBase.FILETIME temp = new WinBase.FILETIME();
-        if (!Kernel32Ex.INSTANCE.GetProcessTimes(hProcess, ftCreateTime, ftExitTime, temp, temp)) {
+        if (!Kernel32.INSTANCE.GetProcessTimes(hProcess, ftCreateTime, ftExitTime, temp, temp)) {
             throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
         }
         return ftExitTime.toLong() - ftCreateTime.toLong();

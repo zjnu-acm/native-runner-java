@@ -6,9 +6,9 @@ import com.sun.jna.platform.win32.WinNT.HANDLE;
 import java.io.Closeable;
 import java.util.Objects;
 
-public class CloseableHandle implements Closeable {
+public class SafeHandle implements Closeable {
 
-    public static void closeSafely(HANDLE handle) {
+    public static void close(HANDLE handle) {
         if (handle != null && !WinBase.INVALID_HANDLE_VALUE.equals(handle)) {
             Kernel32.INSTANCE.CloseHandle(handle);
         }
@@ -18,7 +18,7 @@ public class CloseableHandle implements Closeable {
     private boolean closed;
     private final Object closeLock = new Object();
 
-    public CloseableHandle(HANDLE handle) {
+    public SafeHandle(HANDLE handle) {
         if (WinBase.INVALID_HANDLE_VALUE.equals(Objects.requireNonNull(handle))) {
             throw new IllegalArgumentException("invalid handle value");
         }
@@ -35,7 +35,7 @@ public class CloseableHandle implements Closeable {
             synchronized (closeLock) {
                 if (!closed) {
                     closed = true;
-                    closeSafely(handle);
+                    close(handle);
                 }
             }
         }

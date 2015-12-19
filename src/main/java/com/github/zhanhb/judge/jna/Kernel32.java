@@ -1,23 +1,25 @@
 package com.github.zhanhb.judge.jna;
 
 import com.sun.jna.Native;
+import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 import com.sun.jna.platform.win32.BaseTSD.SIZE_T;
 import com.sun.jna.platform.win32.BaseTSD.ULONG_PTR;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinBase.SECURITY_ATTRIBUTES;
 import com.sun.jna.platform.win32.WinDef;
+import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.platform.win32.WinNT.HANDLE;
 import com.sun.jna.ptr.IntByReference;
-import com.sun.jna.win32.StdCallLibrary;
 import com.sun.jna.win32.W32APIOptions;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import javax.annotation.Nullable;
 
-public interface Kernel32Ex extends StdCallLibrary {
+public interface Kernel32 extends com.sun.jna.platform.win32.Kernel32 {
 
-    Kernel32Ex INSTANCE = (Kernel32Ex) Native.loadLibrary("kernel32", Kernel32Ex.class, W32APIOptions.UNICODE_OPTIONS);
+    @SuppressWarnings("FieldNameHidesFieldInSuperclass")
+    Kernel32 INSTANCE = (Kernel32) Native.loadLibrary("kernel32", Kernel32.class, W32APIOptions.UNICODE_OPTIONS);
 
     boolean AssignProcessToJobObject(HANDLE hJob, HANDLE hProcess);
 
@@ -101,13 +103,16 @@ public interface Kernel32Ex extends StdCallLibrary {
 
     boolean GetHandleInformation(HANDLE hObject, WinDef.DWORDByReference dwFlags);
 
-    HANDLE CreateJobObject(SECURITY_ATTRIBUTES object, String object0);
+    @Nullable
+    HANDLE CreateJobObject(SECURITY_ATTRIBUTES lpJobAttributes, String lpName);
 
     @SuppressWarnings("PublicInnerClass")
     abstract class JOBOBJECT_INFORMATION extends Structure {
     }
 
     /**
+     *
+     * @see #JobObjectBasicLimitInformation
      * @see
      * https://msdn.microsoft.com/en-us/library/windows/desktop/ms684147(v=vs.85).aspx
      */
@@ -190,9 +195,16 @@ public interface Kernel32Ex extends StdCallLibrary {
     int JOB_OBJECT_MSG_PROCESS_MEMORY_LIMIT = 9;
     int JOB_OBJECT_MSG_JOB_MEMORY_LIMIT = 10;
 
+    /*enum values of JOBOBJECTINFOCLASS start*/
     int JobObjectBasicAccountingInformation = 1;
+    /**
+     * @see JOBOBJECT_BASIC_LIMIT_INFORMATION
+     */
     int JobObjectBasicLimitInformation = 2;
     int JobObjectBasicProcessIdList = 3;
+    /**
+     * @see JOBOBJECT_BASIC_UI_RESTRICTIONS
+     */
     int JobObjectBasicUIRestrictions = 4;
     int JobObjectSecurityLimitInformation = 5;
     int JobObjectEndOfJobTimeInformation = 6;
@@ -200,10 +212,34 @@ public interface Kernel32Ex extends StdCallLibrary {
     int JobObjectBasicAndIoAccountingInformation = 8;
     int JobObjectExtendedLimitInformation = 9;
     int JobObjectJobSetInformation = 10;
-    int MaxJobObjectInfoClass = 11;
+    int JobObjectGroupInformation = 11;
+    int JobObjectNotificationLimitInformation = 12;
+    int JobObjectLimitViolationInformation = 13;
+    int JobObjectGroupInformationEx = 14;
+    int JobObjectCpuRateControlInformation = 15;
 
+    /*enum values of JOBOBJECTINFOCLASS end*/
+    /**
+     *
+     * @param hJob
+     * @param JobObjectInfoClass
+     * @param lpJobObjectInfo
+     * @param cbJobObjectInfoLength
+     * @return If the function succeeds, the return value is nonzero. If the
+     * function fails, the return value is zero. To get extended error
+     * information, call GetLastError.
+     * @see
+     * https://msdn.microsoft.com/en-us/library/windows/desktop/ms686216(v=vs.85).aspx
+     */
     boolean SetInformationJobObject(HANDLE hJob, int JobObjectInfoClass, JOBOBJECT_INFORMATION lpJobObjectInfo, int cbJobObjectInfoLength);
 
+    boolean QueryInformationJobObject(HANDLE hJob, int JobObjectInfoClass, Structure lpJobObjectInfo, int cbJobObjectInfoLength, IntByReference lpReturnLength);
+
+    /**
+     * https://msdn.microsoft.com/en-us/library/windows/desktop/ms684152(v=vs.85).aspx
+     *
+     * @see #JobObjectBasicUIRestrictions
+     */
     @SuppressWarnings({"PublicInnerClass", "PublicField"})
     class JOBOBJECT_BASIC_UI_RESTRICTIONS extends JOBOBJECT_INFORMATION {
 
@@ -211,7 +247,7 @@ public interface Kernel32Ex extends StdCallLibrary {
 
         @Override
         protected List<String> getFieldOrder() {
-            return Collections.singletonList("UIRestrictionsClass");
+            return Arrays.asList("UIRestrictionsClass");
         }
 
     };
@@ -219,5 +255,40 @@ public interface Kernel32Ex extends StdCallLibrary {
     int GetThreadErrorMode();
 
     boolean SetThreadErrorMode(int dwNewMode, IntByReference lpOldMode);
+
+    @SuppressWarnings({"PublicInnerClass", "PublicField"})
+    class JOBOBJECT_SECURITY_LIMIT_INFORMATION extends JOBOBJECT_INFORMATION {
+
+        public int SecurityLimitFlags;
+        public HANDLE JobToken;
+        public Pointer /*PTOKEN_GROUPS*/ SidsToDisable;
+        public Pointer /*PTOKEN_PRIVILEGES*/ PrivilegesToDelete;
+        public Pointer/*PTOKEN_GROUPS*/ RestrictedSids;
+
+        @Override
+        protected List<String> getFieldOrder() {
+            return Arrays.asList("SecurityLimitFlags", "JobToken", "SidsToDisable", "PrivilegesToDelete", "RestrictedSids");
+        }
+
+    }
+
+    int NORMAL_PRIORITY_CLASS = 0x00000020;
+    int IDLE_PRIORITY_CLASS = 0x00000040;
+    int HIGH_PRIORITY_CLASS = 0x00000080;
+
+    /*
+     * https://msdn.microsoft.com/zh-cn/library/windows/desktop/aa379295(v=vs.85).aspx
+     */
+    boolean OpenProcessToken(HANDLE ProcessHandle, int /*DWORD*/ DesiredAccess, WinNT.HANDLEByReference TokenHandle);
+
+    boolean CreateProcessAsUser(
+            HANDLE hToken,
+            String lpApplicationName, String lpCommandLine,
+            WinBase.SECURITY_ATTRIBUTES lpProcessAttributes,
+            WinBase.SECURITY_ATTRIBUTES lpThreadAttributes,
+            boolean bInheritHandles, WinDef.DWORD dwCreationFlags,
+            Pointer lpEnvironment, String lpCurrentDirectory,
+            WinBase.STARTUPINFO lpStartupInfo,
+            WinBase.PROCESS_INFORMATION lpProcessInformation);
 
 }

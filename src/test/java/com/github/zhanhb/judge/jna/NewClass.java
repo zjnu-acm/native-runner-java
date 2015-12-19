@@ -1,6 +1,6 @@
 package com.github.zhanhb.judge.jna;
 
-import com.github.zhanhb.judge.jna.Kernel32Ex.JOBOBJECT_BASIC_LIMIT_INFORMATION;
+import com.github.zhanhb.judge.jna.Kernel32.JOBOBJECT_BASIC_LIMIT_INFORMATION;
 import java.lang.reflect.Field;
 import org.junit.Test;
 
