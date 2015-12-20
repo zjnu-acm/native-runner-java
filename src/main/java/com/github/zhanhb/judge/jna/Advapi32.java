@@ -5,8 +5,9 @@ import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.platform.win32.WinNT.HANDLE;
-import com.sun.jna.platform.win32.WinNT.SID_AND_ATTRIBUTES;
+import com.sun.jna.platform.win32.WinNT.PSIDByReference;
 import com.sun.jna.win32.W32APIOptions;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -38,12 +39,12 @@ public interface Advapi32 extends com.sun.jna.platform.win32.Advapi32 {
             int /*DWORD*/ dwSubAuthority5,
             int /*DWORD*/ dwSubAuthority6,
             int /*DWORD*/ dwSubAuthority7,
-            WinNT.PSIDByReference pSid);
+            PSIDByReference pSid);
 
     @SuppressWarnings({"PublicField", "PublicInnerClass"})
     class SID_IDENTIFIER_AUTHORITY extends Structure {
 
-        public byte[] Value = new byte[6];
+        public byte[] Value = new byte[6]; // the length of the value must be 6
 
         public SID_IDENTIFIER_AUTHORITY() {
         }
@@ -75,8 +76,49 @@ public interface Advapi32 extends com.sun.jna.platform.win32.Advapi32 {
     boolean SetTokenInformation(
             HANDLE TokenHandle,
             int /*TOKEN_INFORMATION_CLASS*/ TokenInformationClass,
-            Pointer TokenInformation,
+            Structure TokenInformation,
             int /*DWORD*/ TokenInformationLength
     );
+
+    @SuppressWarnings({"PublicField", "PublicInnerClass"})
+    class TOKEN_MANDATORY_LABEL extends Structure {
+
+        public SID_AND_ATTRIBUTES Label;
+
+        @Override
+        protected List<String> getFieldOrder() {
+            return Collections.singletonList("Label");
+        }
+
+    }
+
+    @SuppressWarnings({"PublicField", "PublicInnerClass"})
+    class SID_AND_ATTRIBUTES extends Structure {
+
+        /**
+         * Pointer to a SID structure.
+         */
+        public Pointer Sid;
+
+        /**
+         * Specifies attributes of the SID. This value contains up to 32 one-bit
+         * flags. Its meaning depends on the definition and use of the SID.
+         */
+        public int Attributes;
+
+        public SID_AND_ATTRIBUTES() {
+            super();
+        }
+
+        public SID_AND_ATTRIBUTES(Pointer memory) {
+            super(memory);
+        }
+
+        @Override
+        protected List<String> getFieldOrder() {
+            return Arrays.asList("Sid", "Attributes");
+        }
+
+    }
 
 }

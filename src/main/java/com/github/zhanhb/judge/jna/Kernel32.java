@@ -13,6 +13,7 @@ import com.sun.jna.platform.win32.WinNT.HANDLE;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.win32.W32APIOptions;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
 
@@ -247,7 +248,7 @@ public interface Kernel32 extends com.sun.jna.platform.win32.Kernel32 {
 
         @Override
         protected List<String> getFieldOrder() {
-            return Arrays.asList("UIRestrictionsClass");
+            return Collections.singletonList("UIRestrictionsClass");
         }
 
     };

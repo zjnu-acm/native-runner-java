@@ -1,5 +1,8 @@
 package com.github.zhanhb.judge.jna;
 
+import com.github.zhanhb.judge.jna.Advapi32.SID_AND_ATTRIBUTES;
+import com.github.zhanhb.judge.jna.Advapi32.SID_IDENTIFIER_AUTHORITY;
+import com.github.zhanhb.judge.jna.Advapi32.TOKEN_MANDATORY_LABEL;
 import static com.github.zhanhb.judge.jna.Constants.*;
 import static com.github.zhanhb.judge.jna.Kernel32.*;
 import com.sun.jna.platform.win32.Win32Exception;
@@ -30,10 +33,11 @@ import static com.sun.jna.platform.win32.WinNT.OPEN_EXISTING;
 import static com.sun.jna.platform.win32.WinNT.TOKEN_ADJUST_DEFAULT;
 import static com.sun.jna.platform.win32.WinNT.TOKEN_ASSIGN_PRIMARY;
 import static com.sun.jna.platform.win32.WinNT.TOKEN_DUPLICATE;
+import com.sun.jna.platform.win32.WinNT.TOKEN_INFORMATION_CLASS;
 import static com.sun.jna.platform.win32.WinNT.TOKEN_QUERY;
 import java.io.File;
 
-public class Main {
+public class Executor {
 
     public static final int _O_RDONLY = 0;
     public static final int _O_WRONLY = 1;
@@ -90,7 +94,7 @@ public class Main {
     public static final int O_SYNC = 0x0800;
     public static final int O_DSYNC = 0x2000;
 
-    private static HANDLE fileOpen(String path, int flags) {
+    private HANDLE fileOpen(String path, int flags) {
         Kernel32 kernel32 = Kernel32.INSTANCE;
         int access
                 = (flags & O_WRONLY) != 0 ? GENERIC_WRITE
@@ -127,20 +131,18 @@ public class Main {
         return h;
     }
 
-    @SuppressWarnings("UseOfSystemOutOrSystemErr")
-    public static void main(String[] args) {
+    public ExecuteResult execute(Options options) {
         Kernel32 kernel32 = Kernel32.INSTANCE;
-        Options parser = new ArgumentsParser().parse(args);
 
-        String prog = parser.getProg();
-        String inputFileName = parser.getInputFileName();
-        String outputFileName = parser.getOutputFileName();
-        boolean redirectErrorStream = parser.isRedirectErrorStream();
-        String errFileName = parser.getErrFileName();
+        String prog = options.getProg();
+        String inputFileName = options.getInputFileName();
+        String outputFileName = options.getOutputFileName();
+        boolean redirectErrorStream = options.isRedirectErrorStream();
+        String errFileName = options.getErrFileName();
 
-        long timeLimit = parser.getTimeLimit();
-        long memoryLimit = parser.getMemoryLimit();
-        long outputLimit = parser.getOutputLimit();
+        long timeLimit = options.getTimeLimit();
+        long memoryLimit = options.getMemoryLimit();
+        long outputLimit = options.getOutputLimit();
 
         try (Sandbox sandbox = new Sandbox();
                 SafeHandle hIn = new SafeHandle(fileOpen(inputFileName, O_RDONLY));
@@ -193,17 +195,18 @@ public class Main {
                         judgement.terminate(OUTPUT_LIMIT_EXCEED);
                     }
                 }
-                System.out.printf("{time:%d,memory:%d,haltCode:%d,exitCode:%s}%n",
-                        judgement.getTime(),
-                        judgement.getMemory(),
-                        judgement.getHaltCode(),
-                        Long.toString(judgement.getExitCode() & 0xffffffffL));
+                return ExecuteResult.builder()
+                        .time(judgement.getTime())
+                        .memory(judgement.getMemory())
+                        .haltCode(judgement.getHaltCode())
+                        .exitCode(judgement.getExitCode())
+                        .build();
             }
         }
 
     }
 
-    private static PROCESS_INFORMATION createProcess(String lpCommandLine, HANDLE hIn, HANDLE hOut, HANDLE hErr,
+    private PROCESS_INFORMATION createProcess(String lpCommandLine, HANDLE hIn, HANDLE hOut, HANDLE hErr,
             boolean redirectErrorStream) {
         Kernel32 kernel32 = Kernel32.INSTANCE;
 
@@ -211,8 +214,8 @@ public class Main {
         sa.bInheritHandle = true;
 
         String lpApplicationName = null;
-        WinBase.SECURITY_ATTRIBUTES lpProcessAttributes = null;
-        WinBase.SECURITY_ATTRIBUTES lpThreadAttributes = null;
+        WinBase.SECURITY_ATTRIBUTES lpProcessAttributes = new WinBase.SECURITY_ATTRIBUTES();
+        WinBase.SECURITY_ATTRIBUTES lpThreadAttributes = new WinBase.SECURITY_ATTRIBUTES();
         WinDef.DWORD dwCreationFlags = new WinDef.DWORD(
                 CREATE_SUSPENDED
                 | HIGH_PRIORITY_CLASS
@@ -237,6 +240,26 @@ public class Main {
         }
 
         try (SafeHandle hToken = new SafeHandle(createRestrictedToken())) {
+            SID_IDENTIFIER_AUTHORITY pIdentifierAuthority = new SID_IDENTIFIER_AUTHORITY(new byte[]{0, 0, 0, 0, 0, 16});
+
+            int SECURITY_MANDATORY_LOW_RID = 0x1000;
+            int SE_GROUP_INTEGRITY = 0x00000020;
+
+            WinNT.PSID pSid = Advapi32Util.newPSID(pIdentifierAuthority, SECURITY_MANDATORY_LOW_RID);
+
+            TOKEN_MANDATORY_LABEL TokenInformation = new TOKEN_MANDATORY_LABEL();
+            TokenInformation.Label = new SID_AND_ATTRIBUTES();
+            TokenInformation.Label.Attributes = SE_GROUP_INTEGRITY;
+            TokenInformation.Label.Sid = pSid.getPointer();
+
+            if (!Advapi32.INSTANCE.SetTokenInformation(
+                    hToken.get(),
+                    TOKEN_INFORMATION_CLASS.TokenIntegrityLevel,
+                    TokenInformation,
+                    TokenInformation.size() + Advapi32.INSTANCE.GetLengthSid(pSid))) {
+                throw new Win32Exception(kernel32.GetLastError());
+            }
+
             // pass error mode SEM_NOGPFAULTERRORBOX to the child process
             int oldErrorMode = kernel32.SetErrorMode(Kernel32.SEM_NOGPFAULTERRORBOX);
             try {
@@ -262,7 +285,7 @@ public class Main {
 
     }
 
-    private static HANDLE createRestrictedToken() {
+    private HANDLE createRestrictedToken() {
         Kernel32 kernel32 = Kernel32.INSTANCE;
         WinNT.HANDLEByReference TokenHandle = new HANDLEByReference();
         if (!kernel32.OpenProcessToken(kernel32.GetCurrentProcess(),
@@ -293,4 +316,5 @@ public class Main {
         }
         return NewTokenHandle.getValue();
     }
+
 }

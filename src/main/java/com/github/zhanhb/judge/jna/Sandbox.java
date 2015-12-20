@@ -64,7 +64,7 @@ public class Sandbox implements Closeable {
 
     @Override
     public void close() {
-        Kernel32.INSTANCE.CloseHandle(hJob);
+        SafeHandle.close(hJob);
     }
 
 }

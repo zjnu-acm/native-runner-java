@@ -9,9 +9,9 @@ import com.sun.jna.win32.W32APIOptions;
 import java.util.Arrays;
 import java.util.List;
 
-public interface PsapiEx extends StdCallLibrary {
+public interface Psapi extends StdCallLibrary {
 
-    PsapiEx INSTANCE = (PsapiEx) Native.loadLibrary("psapi", PsapiEx.class, W32APIOptions.DEFAULT_OPTIONS);
+    Psapi INSTANCE = (Psapi) Native.loadLibrary("psapi", Psapi.class, W32APIOptions.DEFAULT_OPTIONS);
 
     /**
      * Memory statistics for a process.

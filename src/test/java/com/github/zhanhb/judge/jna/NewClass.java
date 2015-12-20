@@ -1,17 +1,14 @@
 package com.github.zhanhb.judge.jna;
 
-import com.github.zhanhb.judge.jna.Kernel32.JOBOBJECT_BASIC_LIMIT_INFORMATION;
-import java.lang.reflect.Field;
+import com.github.zhanhb.judge.jna.Advapi32.SID_IDENTIFIER_AUTHORITY;
 import org.junit.Test;
 
 public class NewClass {
 
     @Test
     public void test() {
-        Field[] declaredFields = JOBOBJECT_BASIC_LIMIT_INFORMATION.class.getDeclaredFields();
-        for (Field declaredField : declaredFields) {
-            System.out.println('"' + declaredField.getName() + '"' + ',');
-        }
+        SID_IDENTIFIER_AUTHORITY sid_identifier_authority = new SID_IDENTIFIER_AUTHORITY();
+        System.out.println(sid_identifier_authority.size());
     }
 
 }

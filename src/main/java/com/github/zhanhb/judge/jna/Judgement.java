@@ -1,5 +1,6 @@
 package com.github.zhanhb.judge.jna;
 
+import com.github.zhanhb.judge.jna.Psapi.PROCESS_MEMORY_COUNTERS;
 import com.sun.jna.platform.win32.Win32Exception;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinNT;
@@ -26,7 +27,12 @@ public class Judgement {
     }
 
     public long getMemory() {
-        return PsapiUtil.GetProcessMemoryInfo(hProcess).PeakWorkingSetSize.longValue();
+        PROCESS_MEMORY_COUNTERS ppsmemCounters = new PROCESS_MEMORY_COUNTERS();
+        boolean success = Psapi.INSTANCE.GetProcessMemoryInfo(hProcess, ppsmemCounters, ppsmemCounters.cb);
+        if (!success) {
+            throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
+        }
+        return ppsmemCounters.PeakWorkingSetSize.longValue();
     }
 
     private boolean join0(int millis) {
