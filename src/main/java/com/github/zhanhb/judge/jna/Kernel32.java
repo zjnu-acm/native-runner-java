@@ -102,8 +102,6 @@ public interface Kernel32 extends com.sun.jna.platform.win32.Kernel32 {
      */
     boolean GetProcessTimes(HANDLE hProcess, WinBase.FILETIME lpCreationTime, WinBase.FILETIME lpExitTime, WinBase.FILETIME lpKernelTime, WinBase.FILETIME lpUserTime);
 
-    boolean GetHandleInformation(HANDLE hObject, WinDef.DWORDByReference dwFlags);
-
     @Nullable
     HANDLE CreateJobObject(SECURITY_ATTRIBUTES lpJobAttributes, String lpName);
 
@@ -234,8 +232,6 @@ public interface Kernel32 extends com.sun.jna.platform.win32.Kernel32 {
      */
     boolean SetInformationJobObject(HANDLE hJob, int JobObjectInfoClass, JOBOBJECT_INFORMATION lpJobObjectInfo, int cbJobObjectInfoLength);
 
-    boolean QueryInformationJobObject(HANDLE hJob, int JobObjectInfoClass, Structure lpJobObjectInfo, int cbJobObjectInfoLength, IntByReference lpReturnLength);
-
     /**
      * https://msdn.microsoft.com/en-us/library/windows/desktop/ms684152(v=vs.85).aspx
      *
@@ -244,7 +240,7 @@ public interface Kernel32 extends com.sun.jna.platform.win32.Kernel32 {
     @SuppressWarnings({"PublicInnerClass", "PublicField"})
     class JOBOBJECT_BASIC_UI_RESTRICTIONS extends JOBOBJECT_INFORMATION {
 
-        public int UIRestrictionsClass;
+        public int /*DWORD*/ UIRestrictionsClass;
 
         @Override
         protected List<String> getFieldOrder() {
@@ -256,22 +252,6 @@ public interface Kernel32 extends com.sun.jna.platform.win32.Kernel32 {
     int GetThreadErrorMode();
 
     boolean SetThreadErrorMode(int dwNewMode, IntByReference lpOldMode);
-
-    @SuppressWarnings({"PublicInnerClass", "PublicField"})
-    class JOBOBJECT_SECURITY_LIMIT_INFORMATION extends JOBOBJECT_INFORMATION {
-
-        public int SecurityLimitFlags;
-        public HANDLE JobToken;
-        public Pointer /*PTOKEN_GROUPS*/ SidsToDisable;
-        public Pointer /*PTOKEN_PRIVILEGES*/ PrivilegesToDelete;
-        public Pointer/*PTOKEN_GROUPS*/ RestrictedSids;
-
-        @Override
-        protected List<String> getFieldOrder() {
-            return Arrays.asList("SecurityLimitFlags", "JobToken", "SidsToDisable", "PrivilegesToDelete", "RestrictedSids");
-        }
-
-    }
 
     int NORMAL_PRIORITY_CLASS = 0x00000020;
     int IDLE_PRIORITY_CLASS = 0x00000040;

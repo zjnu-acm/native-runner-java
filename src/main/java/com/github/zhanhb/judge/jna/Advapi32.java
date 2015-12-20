@@ -5,6 +5,7 @@ import com.sun.jna.Pointer;
 import com.sun.jna.Structure;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.platform.win32.WinNT.HANDLE;
+import com.sun.jna.platform.win32.WinNT.PSID;
 import com.sun.jna.platform.win32.WinNT.PSIDByReference;
 import com.sun.jna.win32.W32APIOptions;
 import java.util.Arrays;
@@ -120,5 +121,8 @@ public interface Advapi32 extends com.sun.jna.platform.win32.Advapi32 {
         }
 
     }
+
+    /*https://msdn.microsoft.com/en-us/library/windows/desktop/aa446631(v=vs.85).aspx*/
+    Pointer FreeSid(PSID pSid);
 
 }

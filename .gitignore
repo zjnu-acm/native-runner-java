@@ -61,3 +61,10 @@ $RECYCLE.BIN/
 *.lnk
 *.svn
 *.log
+
+# NetBeans
+/nbproject
+
+# idea
+.idea
+*.iml

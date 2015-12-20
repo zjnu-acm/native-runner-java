@@ -3,7 +3,6 @@ package com.github.zhanhb.judge.jna;
 import static com.github.zhanhb.judge.jna.Kernel32.*;
 import com.github.zhanhb.judge.jna.Kernel32.JOBOBJECT_BASIC_LIMIT_INFORMATION;
 import com.github.zhanhb.judge.jna.Kernel32.JOBOBJECT_BASIC_UI_RESTRICTIONS;
-import com.sun.jna.platform.win32.Win32Exception;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.platform.win32.WinNT.HANDLE;
 import java.io.Closeable;
@@ -14,9 +13,7 @@ public class Sandbox implements Closeable {
 
     public Sandbox() {
         hJob = Kernel32.INSTANCE.CreateJobObject(null, null);
-        if (hJob == null || hJob.getPointer() == null) {
-            throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
-        }
+        Kernel32Util.assertTrue(hJob != null && hJob.getPointer() != null);
 
         boolean success = false;
         try {
@@ -24,9 +21,7 @@ public class Sandbox implements Closeable {
             jobli.ActiveProcessLimit = 1;
             // These are the only 1 restrictions I want placed on the job (process).
             jobli.LimitFlags = JOB_OBJECT_LIMIT_ACTIVE_PROCESS;
-            if (!Kernel32.INSTANCE.SetInformationJobObject(hJob, JobObjectBasicLimitInformation, jobli, jobli.size())) {
-                throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
-            }
+            Kernel32Util.assertTrue(Kernel32.INSTANCE.SetInformationJobObject(hJob, JobObjectBasicLimitInformation, jobli, jobli.size()));
 
             // Second, set some UI restrictions.
             JOBOBJECT_BASIC_UI_RESTRICTIONS jobuir = new JOBOBJECT_BASIC_UI_RESTRICTIONS();
@@ -44,10 +39,8 @@ public class Sandbox implements Closeable {
                     JOB_OBJECT_UILIMIT_DESKTOP
                     | // The process can't log off the system.
                     JOB_OBJECT_UILIMIT_EXITWINDOWS;
-            if (!Kernel32.INSTANCE.SetInformationJobObject(hJob, JobObjectBasicUIRestrictions, jobuir,
-                    jobuir.size())) {
-                throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
-            }
+            Kernel32Util.assertTrue(Kernel32.INSTANCE.SetInformationJobObject(hJob, JobObjectBasicUIRestrictions, jobuir,
+                    jobuir.size()));
             success = true;
         } finally {
             if (!success) {
@@ -57,9 +50,7 @@ public class Sandbox implements Closeable {
     }
 
     public void beforeProcessStart(HANDLE hProcess) {
-        if (!Kernel32.INSTANCE.AssignProcessToJobObject(hJob, hProcess)) {
-            throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
-        }
+        Kernel32Util.assertTrue(Kernel32.INSTANCE.AssignProcessToJobObject(hJob, hProcess));
     }
 
     @Override

@@ -5,7 +5,6 @@ import com.github.zhanhb.judge.jna.Advapi32.SID_IDENTIFIER_AUTHORITY;
 import com.github.zhanhb.judge.jna.Advapi32.TOKEN_MANDATORY_LABEL;
 import static com.github.zhanhb.judge.jna.Constants.*;
 import static com.github.zhanhb.judge.jna.Kernel32.*;
-import com.sun.jna.platform.win32.Win32Exception;
 import com.sun.jna.platform.win32.WinBase;
 import static com.sun.jna.platform.win32.WinBase.CREATE_BREAKAWAY_FROM_JOB;
 import static com.sun.jna.platform.win32.WinBase.CREATE_NEW_PROCESS_GROUP;
@@ -95,7 +94,6 @@ public class Executor {
     public static final int O_DSYNC = 0x2000;
 
     private HANDLE fileOpen(String path, int flags) {
-        Kernel32 kernel32 = Kernel32.INSTANCE;
         int access
                 = (flags & O_WRONLY) != 0 ? GENERIC_WRITE
                         : (flags & O_RDWR) != 0 ? (GENERIC_READ | GENERIC_WRITE)
@@ -116,7 +114,7 @@ public class Executor {
                         : FILE_ATTRIBUTE_NORMAL;
 
         int flagsAndAttributes = maybeWriteThrough | maybeDeleteOnClose;
-        HANDLE h = kernel32.CreateFile(
+        HANDLE h = Kernel32.INSTANCE.CreateFile(
                 path, /* Wide char path name */
                 access, /* Read and/or write permission */
                 sharing, /* File sharing flags */
@@ -124,16 +122,11 @@ public class Executor {
                 disposition, /* creation disposition */
                 flagsAndAttributes, /* flags and attributes */
                 null);
-
-        if (h == null || INVALID_HANDLE_VALUE.equals(h)) {
-            throw new Win32Exception(kernel32.GetLastError());
-        }
+        Kernel32Util.assertTrue(h != null && !INVALID_HANDLE_VALUE.equals(h));
         return h;
     }
 
     public ExecuteResult execute(Options options) {
-        Kernel32 kernel32 = Kernel32.INSTANCE;
-
         String prog = options.getProg();
         String inputFileName = options.getInputFileName();
         String outputFileName = options.getOutputFileName();
@@ -146,27 +139,19 @@ public class Executor {
 
         try (Sandbox sandbox = new Sandbox();
                 SafeHandle hIn = new SafeHandle(fileOpen(inputFileName, O_RDONLY));
-                SafeHandle hOut = new SafeHandle(fileOpen(outputFileName, O_WRONLY | O_CREAT | O_TRUNC))) {
-            SafeHandle hErr = redirectErrorStream ? hOut : new SafeHandle(fileOpen(errFileName, O_WRONLY | O_CREAT | O_TRUNC));
+                SafeHandle hOut = new SafeHandle(fileOpen(outputFileName, O_WRONLY | O_CREAT | O_TRUNC));
+                SafeHandle hErr = redirectErrorStream ? hOut : new SafeHandle(fileOpen(errFileName, O_WRONLY | O_CREAT | O_TRUNC));) {
 
-            PROCESS_INFORMATION pi = createProcess(prog, hIn.get(), hOut.get(), hErr.get(), redirectErrorStream);
+            PROCESS_INFORMATION pi = createProcess(prog, hIn.getValue(), hOut.getValue(), hErr.getValue(), redirectErrorStream);
 
             try (SafeHandle hProcess = new SafeHandle(pi.hProcess);
                     SafeHandle hThread = new SafeHandle(pi.hThread)) {
-                Judgement judgement = new Judgement(hProcess.get());
+                Judgement judgement = new Judgement(hProcess.getValue());
 
-                sandbox.beforeProcessStart(hProcess.get());
+                sandbox.beforeProcessStart(hProcess.getValue());
 
-                while (true) {
-                    int dwCount = Kernel32.INSTANCE.ResumeThread(hThread.get());
-                    if (dwCount == -1) {
-                        throw new Win32Exception(kernel32.GetLastError());
-                    }
-                    if (dwCount == 0) {
-                        break;
-                    }
-                }
-
+                int dwCount = Kernel32.INSTANCE.ResumeThread(hThread.getValue());
+                Kernel32Util.assertTrue(dwCount != -1);
                 hThread.close();
 
                 while (true) {
@@ -188,12 +173,12 @@ public class Executor {
                     if (judgement.join(dwWaitTime)) {
                         break;
                     }
-                    if (new File(outputFileName).length() > outputLimit) {
-                        judgement.terminate(OUTPUT_LIMIT_EXCEED);
-                    }
-                    if (!redirectErrorStream && new File(errFileName).length() > outputLimit) {
-                        judgement.terminate(OUTPUT_LIMIT_EXCEED);
-                    }
+                }
+                if (new File(outputFileName).length() > outputLimit) {
+                    judgement.terminate(OUTPUT_LIMIT_EXCEED);
+                }
+                if (!redirectErrorStream && new File(errFileName).length() > outputLimit) {
+                    judgement.terminate(OUTPUT_LIMIT_EXCEED);
                 }
                 return ExecuteResult.builder()
                         .time(judgement.getTime())
@@ -208,14 +193,12 @@ public class Executor {
 
     private PROCESS_INFORMATION createProcess(String lpCommandLine, HANDLE hIn, HANDLE hOut, HANDLE hErr,
             boolean redirectErrorStream) {
-        Kernel32 kernel32 = Kernel32.INSTANCE;
-
         WinBase.SECURITY_ATTRIBUTES sa = new WinBase.SECURITY_ATTRIBUTES();
         sa.bInheritHandle = true;
 
         String lpApplicationName = null;
-        WinBase.SECURITY_ATTRIBUTES lpProcessAttributes = new WinBase.SECURITY_ATTRIBUTES();
-        WinBase.SECURITY_ATTRIBUTES lpThreadAttributes = new WinBase.SECURITY_ATTRIBUTES();
+        WinBase.SECURITY_ATTRIBUTES lpProcessAttributes = null;
+        WinBase.SECURITY_ATTRIBUTES lpThreadAttributes = null;
         WinDef.DWORD dwCreationFlags = new WinDef.DWORD(
                 CREATE_SUSPENDED
                 | HIGH_PRIORITY_CLASS
@@ -233,10 +216,10 @@ public class Executor {
         lpStartupInfo.hStdOutput = hOut;
         lpStartupInfo.hStdError = hErr;
 
-        kernel32.SetHandleInformation(hIn, HANDLE_FLAG_INHERIT, 1);
-        kernel32.SetHandleInformation(hOut, HANDLE_FLAG_INHERIT, 1);
+        Kernel32Util.assertTrue(Kernel32.INSTANCE.SetHandleInformation(hIn, HANDLE_FLAG_INHERIT, 1));
+        Kernel32Util.assertTrue(Kernel32.INSTANCE.SetHandleInformation(hOut, HANDLE_FLAG_INHERIT, 1));
         if (!redirectErrorStream) {
-            kernel32.SetHandleInformation(hErr, HANDLE_FLAG_INHERIT, 1);
+            Kernel32Util.assertTrue(Kernel32.INSTANCE.SetHandleInformation(hErr, HANDLE_FLAG_INHERIT, 1));
         }
 
         try (SafeHandle hToken = new SafeHandle(createRestrictedToken())) {
@@ -247,58 +230,55 @@ public class Executor {
 
             WinNT.PSID pSid = Advapi32Util.newPSID(pIdentifierAuthority, SECURITY_MANDATORY_LOW_RID);
 
-            TOKEN_MANDATORY_LABEL TokenInformation = new TOKEN_MANDATORY_LABEL();
-            TokenInformation.Label = new SID_AND_ATTRIBUTES();
-            TokenInformation.Label.Attributes = SE_GROUP_INTEGRITY;
-            TokenInformation.Label.Sid = pSid.getPointer();
-
-            if (!Advapi32.INSTANCE.SetTokenInformation(
-                    hToken.get(),
-                    TOKEN_INFORMATION_CLASS.TokenIntegrityLevel,
-                    TokenInformation,
-                    TokenInformation.size() + Advapi32.INSTANCE.GetLengthSid(pSid))) {
-                throw new Win32Exception(kernel32.GetLastError());
-            }
-
-            // pass error mode SEM_NOGPFAULTERRORBOX to the child process
-            int oldErrorMode = kernel32.SetErrorMode(Kernel32.SEM_NOGPFAULTERRORBOX);
             try {
-                if (!kernel32.CreateProcessAsUser(
-                        hToken.get(),
-                        lpApplicationName, // executable name
-                        lpCommandLine,// command line
-                        lpProcessAttributes, // process security attribute
-                        lpThreadAttributes, // thread security attribute
-                        true, // inherits system handles
-                        dwCreationFlags, // selected based on exe type
-                        null,
-                        lpCurrentDirectory,
-                        lpStartupInfo,
-                        lpProcessInformation)) {
-                    throw new Win32Exception(kernel32.GetLastError());
+                TOKEN_MANDATORY_LABEL TokenInformation = new TOKEN_MANDATORY_LABEL();
+                TokenInformation.Label = new SID_AND_ATTRIBUTES();
+                TokenInformation.Label.Attributes = SE_GROUP_INTEGRITY;
+                TokenInformation.Label.Sid = pSid.getPointer();
+
+                Kernel32Util.assertTrue(Advapi32.INSTANCE.SetTokenInformation(
+                        hToken.getValue(),
+                        TOKEN_INFORMATION_CLASS.TokenIntegrityLevel,
+                        TokenInformation,
+                        TokenInformation.size() + Advapi32.INSTANCE.GetLengthSid(pSid)));
+
+                // pass error mode SEM_NOGPFAULTERRORBOX to the child process
+                int oldErrorMode = Kernel32.INSTANCE.SetErrorMode(SEM_NOGPFAULTERRORBOX);
+                try {
+                    Kernel32Util.assertTrue(Kernel32.INSTANCE.CreateProcessAsUser(
+                            hToken.getValue(),
+                            lpApplicationName, // executable name
+                            lpCommandLine,// command line
+                            lpProcessAttributes, // process security attribute
+                            lpThreadAttributes, // thread security attribute
+                            true, // inherits system handles
+                            dwCreationFlags, // selected based on exe type
+                            null,
+                            lpCurrentDirectory,
+                            lpStartupInfo,
+                            lpProcessInformation));
+                } finally {
+                    Kernel32.INSTANCE.SetErrorMode(oldErrorMode);
                 }
+                return lpProcessInformation;
             } finally {
-                kernel32.SetErrorMode(oldErrorMode);
+                Kernel32Util.assertTrue(Advapi32.INSTANCE.FreeSid(pSid) == null);
             }
-            return lpProcessInformation;
         }
 
     }
 
     private HANDLE createRestrictedToken() {
-        Kernel32 kernel32 = Kernel32.INSTANCE;
         WinNT.HANDLEByReference TokenHandle = new HANDLEByReference();
-        if (!kernel32.OpenProcessToken(kernel32.GetCurrentProcess(),
+        Kernel32Util.assertTrue(Kernel32.INSTANCE.OpenProcessToken(Kernel32.INSTANCE.GetCurrentProcess(),
                 TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_QUERY | TOKEN_ADJUST_DEFAULT,
-                TokenHandle)) {
-            throw new Win32Exception(kernel32.GetLastError());
-        }
+                TokenHandle));
 
         int SANDBOX_INERT = 2;
-        HANDLEByReference NewTokenHandle = new HANDLEByReference();
-        try {
-            if (!Advapi32.INSTANCE.CreateRestrictedToken(
-                    TokenHandle.getValue(), // ExistingTokenHandle
+        try (SafeHandle safeHandle = new SafeHandle(TokenHandle.getValue())) {
+            HANDLEByReference NewTokenHandle = new HANDLEByReference();
+            Kernel32Util.assertTrue(Advapi32.INSTANCE.CreateRestrictedToken(
+                    safeHandle.getValue(), // ExistingTokenHandle
                     SANDBOX_INERT, // Flags
                     0, // DisableSidCount
                     null, // SidsToDisable
@@ -307,14 +287,10 @@ public class Executor {
                     0, // RestrictedSidCount
                     null, // SidsToRestrict
                     NewTokenHandle // NewTokenHandle
-            )) {
-                throw new Win32Exception(kernel32.GetLastError());
-            }
+            ));
 
-        } finally {
-            SafeHandle.close(TokenHandle.getValue());
+            return NewTokenHandle.getValue();
         }
-        return NewTokenHandle.getValue();
     }
 
 }

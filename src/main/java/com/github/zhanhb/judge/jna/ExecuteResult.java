@@ -7,6 +7,7 @@ import lombok.Value;
 @Builder
 @Getter
 @Value
+@SuppressWarnings("FinalClass")
 public class ExecuteResult {
 
     private long time;
