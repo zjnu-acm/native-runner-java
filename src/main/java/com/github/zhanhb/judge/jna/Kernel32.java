@@ -8,7 +8,6 @@ import com.sun.jna.platform.win32.BaseTSD.ULONG_PTR;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinBase.SECURITY_ATTRIBUTES;
 import com.sun.jna.platform.win32.WinDef;
-import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.platform.win32.WinNT.HANDLE;
 import com.sun.jna.ptr.IntByReference;
 import com.sun.jna.win32.W32APIOptions;
@@ -256,11 +255,6 @@ public interface Kernel32 extends com.sun.jna.platform.win32.Kernel32 {
     int NORMAL_PRIORITY_CLASS = 0x00000020;
     int IDLE_PRIORITY_CLASS = 0x00000040;
     int HIGH_PRIORITY_CLASS = 0x00000080;
-
-    /*
-     * https://msdn.microsoft.com/zh-cn/library/windows/desktop/aa379295(v=vs.85).aspx
-     */
-    boolean OpenProcessToken(HANDLE ProcessHandle, int /*DWORD*/ DesiredAccess, WinNT.HANDLEByReference TokenHandle);
 
     boolean CreateProcessAsUser(
             HANDLE hToken,

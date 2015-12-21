@@ -140,7 +140,7 @@ public class Executor {
         try (Sandbox sandbox = new Sandbox();
                 SafeHandle hIn = new SafeHandle(fileOpen(inputFileName, O_RDONLY));
                 SafeHandle hOut = new SafeHandle(fileOpen(outputFileName, O_WRONLY | O_CREAT | O_TRUNC));
-                SafeHandle hErr = redirectErrorStream ? hOut : new SafeHandle(fileOpen(errFileName, O_WRONLY | O_CREAT | O_TRUNC));) {
+                SafeHandle hErr = redirectErrorStream ? hOut : new SafeHandle(fileOpen(errFileName, O_WRONLY | O_CREAT | O_TRUNC))) {
 
             PROCESS_INFORMATION pi = createProcess(prog, hIn.getValue(), hOut.getValue(), hErr.getValue(), redirectErrorStream);
 
@@ -197,8 +197,8 @@ public class Executor {
         sa.bInheritHandle = true;
 
         String lpApplicationName = null;
-        WinBase.SECURITY_ATTRIBUTES lpProcessAttributes = null;
-        WinBase.SECURITY_ATTRIBUTES lpThreadAttributes = null;
+        WinBase.SECURITY_ATTRIBUTES lpProcessAttributes = new WinBase.SECURITY_ATTRIBUTES();
+        WinBase.SECURITY_ATTRIBUTES lpThreadAttributes = new WinBase.SECURITY_ATTRIBUTES();
         WinDef.DWORD dwCreationFlags = new WinDef.DWORD(
                 CREATE_SUSPENDED
                 | HIGH_PRIORITY_CLASS
@@ -270,7 +270,7 @@ public class Executor {
 
     private HANDLE createRestrictedToken() {
         WinNT.HANDLEByReference TokenHandle = new HANDLEByReference();
-        Kernel32Util.assertTrue(Kernel32.INSTANCE.OpenProcessToken(Kernel32.INSTANCE.GetCurrentProcess(),
+        Kernel32Util.assertTrue(Advapi32.INSTANCE.OpenProcessToken(Kernel32.INSTANCE.GetCurrentProcess(),
                 TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_QUERY | TOKEN_ADJUST_DEFAULT,
                 TokenHandle));
 

@@ -1,5 +1,10 @@
 package com.github.zhanhb.judge.jna;
 
+/**
+ * For test purpose.
+ *
+ * @author zhanhb
+ */
 public class Launcher2 {
 
     public static void main(String[] args) {

@@ -4,6 +4,7 @@ import com.github.zhanhb.judge.jna.Psapi.PROCESS_MEMORY_COUNTERS;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Judgement {
@@ -20,7 +21,8 @@ public class Judgement {
         if (halted.compareAndSet(false, true)) {
             haltCode = errorCode;
             if (hProcess != null && !WinBase.INVALID_HANDLE_VALUE.equals(hProcess)) {
-                Kernel32Util.assertTrue(Kernel32.INSTANCE.TerminateProcess(hProcess, 1));
+                // don't check the return value, maybe the process has already exited.
+                Kernel32.INSTANCE.TerminateProcess(hProcess, 1);
             }
         }
     }
@@ -47,11 +49,19 @@ public class Judgement {
     }
 
     public long getTime() {
+        return getTime(TimeUnit.MILLISECONDS);
+    }
+
+    public long getTime(TimeUnit timeUnit) {
         WinBase.FILETIME ftCreateTime = new WinBase.FILETIME();
         WinBase.FILETIME ftExitTime = new WinBase.FILETIME();
         WinBase.FILETIME temp = new WinBase.FILETIME();
         Kernel32Util.assertTrue(Kernel32.INSTANCE.GetProcessTimes(hProcess, ftCreateTime, ftExitTime, temp, temp));
-        return ftExitTime.toLong() - ftCreateTime.toLong();
+        long exscaped = (ftExitTime.dwHighDateTime - ftCreateTime.dwHighDateTime + 0L) << 32
+                | (ftExitTime.dwLowDateTime - ftCreateTime.dwLowDateTime & 0xffffffffL);
+        return timeUnit == TimeUnit.NANOSECONDS
+                ? ((exscaped << 6) + (exscaped << 5) + (exscaped << 2)) // multiply by 100
+                : timeUnit.convert(exscaped / 10, TimeUnit.MICROSECONDS);
     }
 
     public int getHaltCode() {
