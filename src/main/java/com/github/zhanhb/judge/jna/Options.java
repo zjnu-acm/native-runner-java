@@ -18,5 +18,6 @@ public class Options {
     private long outputLimit;
     private boolean redirectErrorStream;
     private String prog;
+    private String workDirectory;
 
 }

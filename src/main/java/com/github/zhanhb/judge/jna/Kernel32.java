@@ -110,7 +110,7 @@ public interface Kernel32 extends com.sun.jna.platform.win32.Kernel32 {
 
     /**
      *
-     * @see #JobObjectBasicLimitInformation
+     * @see JOBOBJECTINFOCLASS#JobObjectBasicLimitInformation
      * @see
      * https://msdn.microsoft.com/en-us/library/windows/desktop/ms684147(v=vs.85).aspx
      */
@@ -193,28 +193,31 @@ public interface Kernel32 extends com.sun.jna.platform.win32.Kernel32 {
     int JOB_OBJECT_MSG_PROCESS_MEMORY_LIMIT = 9;
     int JOB_OBJECT_MSG_JOB_MEMORY_LIMIT = 10;
 
-    /*enum values of JOBOBJECTINFOCLASS start*/
-    int JobObjectBasicAccountingInformation = 1;
-    /**
-     * @see JOBOBJECT_BASIC_LIMIT_INFORMATION
-     */
-    int JobObjectBasicLimitInformation = 2;
-    int JobObjectBasicProcessIdList = 3;
-    /**
-     * @see JOBOBJECT_BASIC_UI_RESTRICTIONS
-     */
-    int JobObjectBasicUIRestrictions = 4;
-    int JobObjectSecurityLimitInformation = 5;
-    int JobObjectEndOfJobTimeInformation = 6;
-    int JobObjectAssociateCompletionPortInformation = 7;
-    int JobObjectBasicAndIoAccountingInformation = 8;
-    int JobObjectExtendedLimitInformation = 9;
-    int JobObjectJobSetInformation = 10;
-    int JobObjectGroupInformation = 11;
-    int JobObjectNotificationLimitInformation = 12;
-    int JobObjectLimitViolationInformation = 13;
-    int JobObjectGroupInformationEx = 14;
-    int JobObjectCpuRateControlInformation = 15;
+    @SuppressWarnings("PublicInnerClass")
+    interface JOBOBJECTINFOCLASS {
+
+        int JobObjectBasicAccountingInformation = 1;
+        /**
+         * @see JOBOBJECT_BASIC_LIMIT_INFORMATION
+         */
+        int JobObjectBasicLimitInformation = 2;
+        int JobObjectBasicProcessIdList = 3;
+        /**
+         * @see JOBOBJECT_BASIC_UI_RESTRICTIONS
+         */
+        int JobObjectBasicUIRestrictions = 4;
+        int JobObjectSecurityLimitInformation = 5;
+        int JobObjectEndOfJobTimeInformation = 6;
+        int JobObjectAssociateCompletionPortInformation = 7;
+        int JobObjectBasicAndIoAccountingInformation = 8;
+        int JobObjectExtendedLimitInformation = 9;
+        int JobObjectJobSetInformation = 10;
+        int JobObjectGroupInformation = 11;
+        int JobObjectNotificationLimitInformation = 12;
+        int JobObjectLimitViolationInformation = 13;
+        int JobObjectGroupInformationEx = 14;
+        int JobObjectCpuRateControlInformation = 15;
+    }
 
     /*enum values of JOBOBJECTINFOCLASS end*/
     /**
@@ -234,7 +237,7 @@ public interface Kernel32 extends com.sun.jna.platform.win32.Kernel32 {
     /**
      * https://msdn.microsoft.com/en-us/library/windows/desktop/ms684152(v=vs.85).aspx
      *
-     * @see #JobObjectBasicUIRestrictions
+     * @see JOBOBJECTINFOCLASS#JobObjectBasicUIRestrictions
      */
     @SuppressWarnings({"PublicInnerClass", "PublicField"})
     class JOBOBJECT_BASIC_UI_RESTRICTIONS extends JOBOBJECT_INFORMATION {

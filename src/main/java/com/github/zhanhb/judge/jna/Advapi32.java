@@ -65,20 +65,20 @@ public interface Advapi32 extends com.sun.jna.platform.win32.Advapi32 {
     }
 
     /**
-     * @param TokenHandle
-     * @param TokenInformationClass TOKEN_INFORMATION_CLASS
-     * @param TokenInformation
-     * @param TokenInformationLength
+     * @param tokenHandle
+     * @param tokenInformationClass TOKEN_INFORMATION_CLASS
+     * @param tokenInformation
+     * @param tokenInformationLength
      * @return
      * @see WinNT.TOKEN_INFORMATION_CLASS
      * @see
      * https://msdn.microsoft.com/en-us/library/windows/desktop/aa379591(v=vs.85).aspx
      */
     boolean SetTokenInformation(
-            HANDLE TokenHandle,
-            int /*TOKEN_INFORMATION_CLASS*/ TokenInformationClass,
-            Structure TokenInformation,
-            int /*DWORD*/ TokenInformationLength
+            HANDLE tokenHandle,
+            int /*TOKEN_INFORMATION_CLASS*/ tokenInformationClass,
+            Structure tokenInformation,
+            int /*DWORD*/ tokenInformationLength
     );
 
     @SuppressWarnings({"PublicField", "PublicInnerClass"})
@@ -124,5 +124,10 @@ public interface Advapi32 extends com.sun.jna.platform.win32.Advapi32 {
 
     /*https://msdn.microsoft.com/en-us/library/windows/desktop/aa446631(v=vs.85).aspx*/
     Pointer FreeSid(PSID pSid);
+
+    int SECURITY_MANDATORY_LOW_RID = 0x1000;
+    int SE_GROUP_INTEGRITY = 0x00000020;
+
+    int SANDBOX_INERT = 2;
 
 }

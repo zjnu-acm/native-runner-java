@@ -7,13 +7,13 @@ import com.sun.jna.ptr.IntByReference;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class Judgement {
+public class JudgeProcess {
 
     private final WinNT.HANDLE hProcess;
     private final AtomicBoolean halted = new AtomicBoolean();
     private int haltCode;
 
-    public Judgement(WinNT.HANDLE hProcess) {
+    public JudgeProcess(WinNT.HANDLE hProcess) {
         this.hProcess = hProcess;
     }
 

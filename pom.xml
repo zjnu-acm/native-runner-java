@@ -86,7 +86,6 @@
                             </excludes>
                         </filter>
                     </filters>
-                    <finalName>${project.build.finalName}-shade</finalName>
                 </configuration>
             </plugin>
             <plugin>

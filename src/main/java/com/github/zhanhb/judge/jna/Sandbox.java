@@ -1,6 +1,7 @@
 package com.github.zhanhb.judge.jna;
 
 import static com.github.zhanhb.judge.jna.Kernel32.*;
+import static com.github.zhanhb.judge.jna.Kernel32.JOBOBJECTINFOCLASS.*;
 import com.github.zhanhb.judge.jna.Kernel32.JOBOBJECT_BASIC_LIMIT_INFORMATION;
 import com.github.zhanhb.judge.jna.Kernel32.JOBOBJECT_BASIC_UI_RESTRICTIONS;
 import com.sun.jna.platform.win32.WinNT;
