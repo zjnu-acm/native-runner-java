@@ -75,7 +75,6 @@
                         <filter>
                             <artifact>net.java.dev.jna:jna-platform</artifact>
                             <includes>
-                                <include>com/sun/jna/platform/*</include>
                                 <include>com/sun/jna/platform/win32/*</include>
                             </includes>
                         </filter>

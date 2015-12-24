@@ -219,7 +219,6 @@ public interface Kernel32 extends com.sun.jna.platform.win32.Kernel32 {
         int JobObjectCpuRateControlInformation = 15;
     }
 
-    /*enum values of JOBOBJECTINFOCLASS end*/
     /**
      *
      * @param hJob
