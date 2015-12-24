@@ -27,7 +27,6 @@ import static com.sun.jna.platform.win32.WinNT.FILE_SHARE_WRITE;
 import static com.sun.jna.platform.win32.WinNT.GENERIC_READ;
 import static com.sun.jna.platform.win32.WinNT.GENERIC_WRITE;
 import com.sun.jna.platform.win32.WinNT.HANDLE;
-import com.sun.jna.platform.win32.WinNT.HANDLEByReference;
 import static com.sun.jna.platform.win32.WinNT.OPEN_ALWAYS;
 import static com.sun.jna.platform.win32.WinNT.OPEN_EXISTING;
 import static com.sun.jna.platform.win32.WinNT.TOKEN_ADJUST_DEFAULT;
@@ -268,26 +267,16 @@ public class Executor {
     }
 
     private HANDLE createRestrictedToken() {
-        WinNT.HANDLEByReference TokenHandle = new HANDLEByReference();
-        Kernel32Util.assertTrue(Advapi32.INSTANCE.OpenProcessToken(Kernel32.INSTANCE.GetCurrentProcess(),
-                TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_QUERY | TOKEN_ADJUST_DEFAULT,
-                TokenHandle));
-
-        try (SafeHandle safeHandle = new SafeHandle(TokenHandle.getValue())) {
-            HANDLEByReference NewTokenHandle = new HANDLEByReference();
-            Kernel32Util.assertTrue(Advapi32.INSTANCE.CreateRestrictedToken(
+        try (SafeHandle safeHandle = new SafeHandle(
+                Advapi32Util.openProcessToken(Kernel32.INSTANCE.GetCurrentProcess(),
+                        TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_QUERY | TOKEN_ADJUST_DEFAULT))) {
+            return Advapi32Util.createRestrictedToken(
                     safeHandle.getValue(), // ExistingTokenHandle
                     SANDBOX_INERT, // Flags
-                    0, // DisableSidCount
                     null, // SidsToDisable
-                    0, // DeletePrivilegeCount
                     null, // PrivilegesToDelete
-                    0, // RestrictedSidCount
-                    null, // SidsToRestrict
-                    NewTokenHandle // NewTokenHandle
-            ));
-
-            return NewTokenHandle.getValue();
+                    null // SidsToRestrict
+            );
         }
     }
 

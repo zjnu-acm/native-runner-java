@@ -25,4 +25,35 @@ public class Advapi32Util {
         return psidByReference.getValue();
     }
 
+    public static WinNT.HANDLE createRestrictedToken(
+            WinNT.HANDLE existingTokenHandle,
+            int /*DWORD*/ flags,
+            Advapi32.SID_AND_ATTRIBUTES[] SidsToDisable,
+            WinNT.LUID_AND_ATTRIBUTES[] PrivilegesToDelete,
+            Advapi32.SID_AND_ATTRIBUTES[] SidsToRestrict
+    ) {
+        WinNT.HANDLEByReference NewTokenHandle = new WinNT.HANDLEByReference();
+        Kernel32Util.assertTrue(Advapi32.INSTANCE.CreateRestrictedToken(
+                existingTokenHandle, // ExistingTokenHandle
+                flags, // Flags
+                SidsToDisable != null ? SidsToDisable.length : 0, // DisableSidCount
+                SidsToDisable, // SidsToDisable
+                PrivilegesToDelete != null ? PrivilegesToDelete.length : 0, // DeletePrivilegeCount
+                PrivilegesToDelete, // PrivilegesToDelete
+                SidsToRestrict != null ? SidsToRestrict.length : 0, // RestrictedSidCount
+                SidsToRestrict, // SidsToRestrict
+                NewTokenHandle // NewTokenHandle
+        ));
+        return NewTokenHandle.getValue();
+    }
+
+    public static WinNT.HANDLE openProcessToken(WinNT.HANDLE processHandle, int desiredAccess) {
+        WinNT.HANDLEByReference tokenHandle = new WinNT.HANDLEByReference();
+        Kernel32Util.assertTrue(Advapi32.INSTANCE.OpenProcessToken(
+                processHandle,
+                desiredAccess,
+                tokenHandle));
+        return tokenHandle.getValue();
+    }
+
 }
