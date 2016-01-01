@@ -1,5 +1,8 @@
-package com.github.zhanhb.judge.jna;
+package com.github.zhanhb.judge.win32;
 
+import com.github.zhanhb.judge.win32.Options;
+import com.github.zhanhb.judge.win32.Executor;
+import com.github.zhanhb.judge.win32.ArgumentsParser;
 import com.github.zhanhb.judge.common.ExecuteResult;
 import java.io.File;
 import java.io.IOException;

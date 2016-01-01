@@ -1,13 +1,13 @@
-package com.github.zhanhb.judge.jna;
+package com.github.zhanhb.judge.win32;
 
 import com.github.zhanhb.judge.common.ExecuteResult;
 import com.github.zhanhb.judge.common.Status;
-import static com.github.zhanhb.judge.jna.Advapi32.*;
-import com.github.zhanhb.judge.jna.Advapi32.SID_AND_ATTRIBUTES;
-import com.github.zhanhb.judge.jna.Advapi32.SID_IDENTIFIER_AUTHORITY;
-import com.github.zhanhb.judge.jna.Advapi32.TOKEN_MANDATORY_LABEL;
-import static com.github.zhanhb.judge.jna.Constants.*;
-import static com.github.zhanhb.judge.jna.Kernel32.*;
+import static com.github.zhanhb.judge.win32.Advapi32.*;
+import com.github.zhanhb.judge.win32.Advapi32.SID_AND_ATTRIBUTES;
+import com.github.zhanhb.judge.win32.Advapi32.SID_IDENTIFIER_AUTHORITY;
+import com.github.zhanhb.judge.win32.Advapi32.TOKEN_MANDATORY_LABEL;
+import static com.github.zhanhb.judge.win32.Constants.*;
+import static com.github.zhanhb.judge.win32.Kernel32.*;
 import com.sun.jna.platform.win32.WinBase;
 import static com.sun.jna.platform.win32.WinBase.CREATE_BREAKAWAY_FROM_JOB;
 import static com.sun.jna.platform.win32.WinBase.CREATE_NEW_PROCESS_GROUP;
@@ -166,13 +166,13 @@ public class Executor {
                 hThread.close();
 
                 while (true) {
-                    long memory = judgeProcess.getMemory();
+                    long memory = judgeProcess.getPeakMemory();
                     if (memory > memoryLimit) {
                         judgeProcess.terminate(Status.memoryLimitExceed);
                         break;
                     }
-                    long time = System.currentTimeMillis() - judgeProcess.getStartTime();
-                    if (timeLimit <= time) {
+                    long time = judgeProcess.getActiveTime();
+                    if (time > timeLimit) {
                         judgeProcess.terminate(Status.timeLimitExceed);
                         judgeProcess.join(TERMINATE_TIMEOUT);
                         break;
@@ -198,7 +198,7 @@ public class Executor {
             judgeProcess.join(Long.MAX_VALUE);
             return ExecuteResult.builder()
                     .time(judgeProcess.getTime())
-                    .memory(judgeProcess.getMemory())
+                    .memory(judgeProcess.getPeakMemory())
                     .haltCode(judgeProcess.getStatus())
                     .exitCode(judgeProcess.getExitCode())
                     .build();

@@ -1,4 +1,4 @@
-package com.github.zhanhb.judge.jna;
+package com.github.zhanhb.judge.win32;
 
 import lombok.Builder;
 import lombok.Getter;

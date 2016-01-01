@@ -1,6 +1,6 @@
-package com.github.zhanhb.judge.jna;
+package com.github.zhanhb.judge.win32;
 
-import com.github.zhanhb.judge.jna.Advapi32.SID_IDENTIFIER_AUTHORITY;
+import com.github.zhanhb.judge.win32.Advapi32.SID_IDENTIFIER_AUTHORITY;
 import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 

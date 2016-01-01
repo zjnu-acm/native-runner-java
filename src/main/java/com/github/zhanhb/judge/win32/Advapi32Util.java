@@ -1,4 +1,4 @@
-package com.github.zhanhb.judge.jna;
+package com.github.zhanhb.judge.win32;
 
 import com.sun.jna.platform.win32.WinNT;
 import java.util.Arrays;

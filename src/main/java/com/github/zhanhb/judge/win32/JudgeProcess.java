@@ -1,8 +1,12 @@
-package com.github.zhanhb.judge.jna;
+package com.github.zhanhb.judge.win32;
 
 import com.github.zhanhb.judge.common.Status;
-import com.github.zhanhb.judge.jna.Psapi.PROCESS_MEMORY_COUNTERS;
+import com.github.zhanhb.judge.win32.Psapi.PROCESS_MEMORY_COUNTERS;
+import com.sun.jna.platform.win32.Win32Exception;
 import com.sun.jna.platform.win32.WinBase;
+import static com.sun.jna.platform.win32.WinBase.WAIT_ABANDONED;
+import static com.sun.jna.platform.win32.WinBase.WAIT_FAILED;
+import static com.sun.jna.platform.win32.WinError.WAIT_TIMEOUT;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 import java.util.concurrent.TimeUnit;
@@ -26,14 +30,21 @@ public class JudgeProcess {
         }
     }
 
-    public long getMemory() {
+    public long getPeakMemory() {
         PROCESS_MEMORY_COUNTERS ppsmemCounters = new PROCESS_MEMORY_COUNTERS();
         Kernel32Util.assertTrue(Psapi.INSTANCE.GetProcessMemoryInfo(hProcess, ppsmemCounters, ppsmemCounters.cb));
         return ppsmemCounters.PeakWorkingSetSize.longValue();
     }
 
     private boolean join0(int millis) {
-        return Kernel32.INSTANCE.WaitForSingleObject(hProcess, millis) == 0;
+        int dwWait = Kernel32.INSTANCE.WaitForSingleObject(hProcess, millis);
+        switch (dwWait) {
+            case WAIT_ABANDONED:
+                throw new IllegalStateException();
+            case WAIT_FAILED:
+                throw new Win32Exception(Kernel32.INSTANCE.GetLastError());
+        }
+        return dwWait != WAIT_TIMEOUT;
     }
 
     public boolean join(long millis) {
@@ -71,6 +82,10 @@ public class JudgeProcess {
         IntByReference dwExitCode = new IntByReference();
         Kernel32Util.assertTrue(Kernel32.INSTANCE.GetExitCodeProcess(hProcess, dwExitCode));
         return dwExitCode.getValue();
+    }
+
+    public long getActiveTime() {
+        return System.currentTimeMillis() - getStartTime();
     }
 
 }
