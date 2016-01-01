@@ -1,4 +1,4 @@
-package com.github.zhanhb.judge.jna;
+package com.github.zhanhb.judge.common;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -12,7 +12,7 @@ public class ExecuteResult {
 
     private long time;
     private long memory;
-    private int haltCode;
+    private Status haltCode;
     private int exitCode;
 
 }

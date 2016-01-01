@@ -28,23 +28,22 @@ public class Advapi32Util {
     public static WinNT.HANDLE createRestrictedToken(
             WinNT.HANDLE existingTokenHandle,
             int /*DWORD*/ flags,
-            Advapi32.SID_AND_ATTRIBUTES[] SidsToDisable,
-            WinNT.LUID_AND_ATTRIBUTES[] PrivilegesToDelete,
-            Advapi32.SID_AND_ATTRIBUTES[] SidsToRestrict
-    ) {
-        WinNT.HANDLEByReference NewTokenHandle = new WinNT.HANDLEByReference();
+            Advapi32.SID_AND_ATTRIBUTES[] sidsToDisable,
+            WinNT.LUID_AND_ATTRIBUTES[] privilegesToDelete,
+            Advapi32.SID_AND_ATTRIBUTES[] sidsToRestrict) {
+        WinNT.HANDLEByReference newTokenHandle = new WinNT.HANDLEByReference();
         Kernel32Util.assertTrue(Advapi32.INSTANCE.CreateRestrictedToken(
                 existingTokenHandle, // ExistingTokenHandle
                 flags, // Flags
-                SidsToDisable != null ? SidsToDisable.length : 0, // DisableSidCount
-                SidsToDisable, // SidsToDisable
-                PrivilegesToDelete != null ? PrivilegesToDelete.length : 0, // DeletePrivilegeCount
-                PrivilegesToDelete, // PrivilegesToDelete
-                SidsToRestrict != null ? SidsToRestrict.length : 0, // RestrictedSidCount
-                SidsToRestrict, // SidsToRestrict
-                NewTokenHandle // NewTokenHandle
+                sidsToDisable != null ? sidsToDisable.length : 0, // DisableSidCount
+                sidsToDisable, // SidsToDisable
+                privilegesToDelete != null ? privilegesToDelete.length : 0, // DeletePrivilegeCount
+                privilegesToDelete, // PrivilegesToDelete
+                sidsToRestrict != null ? sidsToRestrict.length : 0, // RestrictedSidCount
+                sidsToRestrict, // SidsToRestrict
+                newTokenHandle // NewTokenHandle
         ));
-        return NewTokenHandle.getValue();
+        return newTokenHandle.getValue();
     }
 
     public static WinNT.HANDLE openProcessToken(WinNT.HANDLE processHandle, int desiredAccess) {

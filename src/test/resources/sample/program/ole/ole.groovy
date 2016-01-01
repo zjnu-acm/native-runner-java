@@ -1,0 +1,1 @@
+for(def bytes = new byte[16384];;) System.out.write(bytes)

@@ -1,25 +1,24 @@
 package com.github.zhanhb.judge.jna;
 
+import com.github.zhanhb.judge.common.Status;
 import com.github.zhanhb.judge.jna.Psapi.PROCESS_MEMORY_COUNTERS;
 import com.sun.jna.platform.win32.WinBase;
 import com.sun.jna.platform.win32.WinNT;
 import com.sun.jna.ptr.IntByReference;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class JudgeProcess {
 
     private final WinNT.HANDLE hProcess;
-    private final AtomicBoolean halted = new AtomicBoolean();
-    private int haltCode;
+    private final AtomicReference<Status> status = new AtomicReference<>();
 
     public JudgeProcess(WinNT.HANDLE hProcess) {
         this.hProcess = hProcess;
     }
 
-    public void terminate(int errorCode) {
-        if (halted.compareAndSet(false, true)) {
-            haltCode = errorCode;
+    public void terminate(Status errorCode) {
+        if (status.compareAndSet(null, errorCode)) {
             if (hProcess != null && !WinBase.INVALID_HANDLE_VALUE.equals(hProcess)) {
                 // don't check the return value, maybe the process has already exited.
                 Kernel32.INSTANCE.TerminateProcess(hProcess, 1);
@@ -64,8 +63,8 @@ public class JudgeProcess {
                 : timeUnit.convert(exscaped / 10, TimeUnit.MICROSECONDS);
     }
 
-    public int getHaltCode() {
-        return haltCode;
+    public Status getStatus() {
+        return status.get();
     }
 
     public int getExitCode() {

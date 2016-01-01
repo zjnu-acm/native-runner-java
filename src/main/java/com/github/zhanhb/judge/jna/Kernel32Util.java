@@ -2,6 +2,7 @@ package com.github.zhanhb.judge.jna;
 
 import com.sun.jna.platform.win32.Win32Exception;
 import com.sun.jna.platform.win32.WinBase;
+import static com.sun.jna.platform.win32.WinBase.HANDLE_FLAG_INHERIT;
 import com.sun.jna.platform.win32.WinNT;
 
 /**
@@ -16,11 +17,14 @@ public class Kernel32Util {
         }
     }
 
-    public WinNT.HANDLE[] CreatePipe(WinBase.SECURITY_ATTRIBUTES lpPipeAttributes, int nSize) {
+    public static WinNT.HANDLE[] createPipe(WinBase.SECURITY_ATTRIBUTES lpPipeAttributes, int nSize) {
         WinNT.HANDLEByReference hReadPipe = new WinNT.HANDLEByReference();
         WinNT.HANDLEByReference hWritePipe = new WinNT.HANDLEByReference();
         assertTrue(Kernel32.INSTANCE.CreatePipe(hReadPipe, hWritePipe, lpPipeAttributes, nSize));
         return new WinNT.HANDLE[]{hReadPipe.getValue(), hWritePipe.getValue()};
     }
 
+    public static void setInheritable(WinNT.HANDLE handle) {
+        assertTrue(Kernel32.INSTANCE.SetHandleInformation(handle, HANDLE_FLAG_INHERIT, HANDLE_FLAG_INHERIT));
+    }
 }

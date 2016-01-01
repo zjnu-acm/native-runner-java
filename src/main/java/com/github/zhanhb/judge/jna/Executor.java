@@ -1,5 +1,7 @@
 package com.github.zhanhb.judge.jna;
 
+import com.github.zhanhb.judge.common.ExecuteResult;
+import com.github.zhanhb.judge.common.Status;
 import static com.github.zhanhb.judge.jna.Advapi32.*;
 import com.github.zhanhb.judge.jna.Advapi32.SID_AND_ATTRIBUTES;
 import com.github.zhanhb.judge.jna.Advapi32.SID_IDENTIFIER_AUTHORITY;
@@ -34,7 +36,10 @@ import static com.sun.jna.platform.win32.WinNT.TOKEN_ASSIGN_PRIMARY;
 import static com.sun.jna.platform.win32.WinNT.TOKEN_DUPLICATE;
 import com.sun.jna.platform.win32.WinNT.TOKEN_INFORMATION_CLASS;
 import static com.sun.jna.platform.win32.WinNT.TOKEN_QUERY;
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class Executor {
 
@@ -134,6 +139,9 @@ public class Executor {
         String errFileName = options.getErrFileName();
         String workDirectory = options.getWorkDirectory();
 
+        Path outputPath = Paths.get(outputFileName);
+        Path errorPath = Paths.get(errFileName);
+
         long timeLimit = options.getTimeLimit();
         long memoryLimit = options.getMemoryLimit();
         long outputLimit = options.getOutputLimit();
@@ -150,43 +158,48 @@ public class Executor {
                 SafeHandle hProcess = new SafeHandle(pi.hProcess);
                 SafeHandle hThread = new SafeHandle(pi.hThread)) {
             JudgeProcess judgeProcess = new JudgeProcess(hProcess.getValue());
+            try {
+                sandbox.beforeProcessStart(hProcess.getValue());
 
-            sandbox.beforeProcessStart(hProcess.getValue());
+                int dwCount = Kernel32.INSTANCE.ResumeThread(hThread.getValue());
+                Kernel32Util.assertTrue(dwCount != -1);
+                hThread.close();
 
-            int dwCount = Kernel32.INSTANCE.ResumeThread(hThread.getValue());
-            Kernel32Util.assertTrue(dwCount != -1);
-            hThread.close();
-
-            while (true) {
-                long memory = judgeProcess.getMemory();
-                if (memory > memoryLimit) {
-                    judgeProcess.terminate(MEMORY_LIMIT_EXCEED);
-                    break;
+                while (true) {
+                    long memory = judgeProcess.getMemory();
+                    if (memory > memoryLimit) {
+                        judgeProcess.terminate(Status.memoryLimitExceed);
+                        break;
+                    }
+                    long time = System.currentTimeMillis() - judgeProcess.getStartTime();
+                    if (timeLimit <= time) {
+                        judgeProcess.terminate(Status.timeLimitExceed);
+                        judgeProcess.join(TERMINATE_TIMEOUT);
+                        break;
+                    }
+                    long dwWaitTime = timeLimit - time;
+                    if (dwWaitTime > UPDATE_TIME_THRESHOLD) {
+                        dwWaitTime = UPDATE_TIME_THRESHOLD;
+                    }
+                    if (judgeProcess.join(dwWaitTime)) {
+                        break;
+                    }
+                    if (checkOle(outputPath, errorPath, redirectErrorStream, outputLimit)) {
+                        judgeProcess.terminate(Status.outputLimitExceed);
+                        break;
+                    }
                 }
-                long time = System.currentTimeMillis() - judgeProcess.getStartTime();
-                if (timeLimit <= time) {
-                    judgeProcess.terminate(TIME_LIMIT_EXCEED);
-                    judgeProcess.join(TERMINATE_TIMEOUT);
-                    break;
+                if (checkOle(outputPath, errorPath, redirectErrorStream, outputLimit)) {
+                    judgeProcess.terminate(Status.outputLimitExceed);
                 }
-                long dwWaitTime = timeLimit - time;
-                if (dwWaitTime > UPDATE_TIME_THRESHOLD) {
-                    dwWaitTime = UPDATE_TIME_THRESHOLD;
-                }
-                if (judgeProcess.join(dwWaitTime)) {
-                    break;
-                }
+            } finally {
+                judgeProcess.terminate(null);
             }
-            if (new File(outputFileName).length() > outputLimit) {
-                judgeProcess.terminate(OUTPUT_LIMIT_EXCEED);
-            }
-            if (!redirectErrorStream && new File(errFileName).length() > outputLimit) {
-                judgeProcess.terminate(OUTPUT_LIMIT_EXCEED);
-            }
+            judgeProcess.join(Long.MAX_VALUE);
             return ExecuteResult.builder()
                     .time(judgeProcess.getTime())
                     .memory(judgeProcess.getMemory())
-                    .haltCode(judgeProcess.getHaltCode())
+                    .haltCode(judgeProcess.getStatus())
                     .exitCode(judgeProcess.getExitCode())
                     .build();
         }
@@ -267,17 +280,30 @@ public class Executor {
     }
 
     private HANDLE createRestrictedToken() {
-        try (SafeHandle safeHandle = new SafeHandle(
+        try (SafeHandle token = new SafeHandle(
                 Advapi32Util.openProcessToken(Kernel32.INSTANCE.GetCurrentProcess(),
                         TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_QUERY | TOKEN_ADJUST_DEFAULT))) {
             return Advapi32Util.createRestrictedToken(
-                    safeHandle.getValue(), // ExistingTokenHandle
+                    token.getValue(), // ExistingTokenHandle
                     SANDBOX_INERT, // Flags
                     null, // SidsToDisable
                     null, // PrivilegesToDelete
                     null // SidsToRestrict
             );
         }
+    }
+
+    private boolean checkOle(Path outputPath, Path errorPath, boolean redirectErrorStream, long outputLimit) {
+        try {
+            if (Files.size(outputPath) > outputLimit) {
+                return true;
+            }
+            if (!redirectErrorStream && Files.size(errorPath) > outputLimit) {
+                return true;
+            }
+        } catch (IOException ex) {
+        }
+        return false;
     }
 
 }
